@@ -1,0 +1,16 @@
+# Build directories
+cmake-build-*/
+build/
+bin/
+lib/
+
+# IDEs and Editors (CLion, VS Code, etc.)
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+
+# Logs and temporary files
+*.log
