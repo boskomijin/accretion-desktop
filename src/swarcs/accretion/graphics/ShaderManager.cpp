@@ -1,12 +1,15 @@
 /**
  * @file ShaderManager.cpp
- * @brief Implementation of the ShaderManager class for OpenGL ES resource handling.
+ * @brief Implementation of the ShaderManager class for loading, compiling, and linking shaders.
  *
  * @author Bosko Mijin
  * @since 2026-02
  */
 
 #include "swarcs/accretion/graphics/ShaderManager.hpp"
+#include "swarcs/accretion/graphics/ShaderHandle.hpp"
+#include "swarcs/accretion/graphics/ProgramHandle.hpp"
+#include <GLES2/gl2.h>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -15,48 +18,84 @@
 namespace swarcs::accretion::graphics {
 
 /**
- * @brief Constructs the ShaderManager by compiling stages and linking the program.
+ * @brief Loads shader source code from a specified file path.
  *
- * @param vertexPath Filepath to vertex shader.
- * @param fragmentPath Filepath to fragment shader.
- *
- * @author Bosko Mijin
- * @since 2026-02
+ * @param filepath Path to the shader source file.
+ * @return std::string The contents of the shader file.
  */
-ShaderManager::ShaderManager(std::string_view vertexPath, std::string_view fragmentPath) {
-    // Load source code for both shader stages from disk
-    std::string vertexCode = loadShaderFile(vertexPath);
-    std::string fragmentCode = loadShaderFile(fragmentPath);
-
-    // Compile individual shader modules
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexCode);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentCode);
-
-    // Create program container, attach shaders, and link
-    programID = glCreateProgram();
-    glAttachShader(programID, vertexShader);
-    glAttachShader(programID, fragmentShader);
-    glLinkProgram(programID);
-
-    // Verify program linking status
-    GLint success;
-    glGetProgramiv(programID, GL_LINK_STATUS, &success);
-    if (!success) {
-        GLchar infoLog[512];
-        glGetProgramInfoLog(programID, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("Failed to link shader program:\n") + infoLog);
+std::string ShaderManager::loadShaderSource(const std::string& filepath) {
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open shader file: " + filepath);
     }
 
-    // Clean up detached individual shader objects after successful linking
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 /**
- * @brief Destroys the shader manager, deleting the OpenGL program resource if allocated.
+ * @brief Checks for compilation or linking errors in shaders and programs.
  *
- * @author Bosko Mijin
- * @since 2026-02
+ * @param shaderOrProgram OpenGL identifier of the shader or program to check.
+ * @param type String descriptor indicating the type ("VERTEX", "FRAGMENT", or "PROGRAM").
+ */
+void ShaderManager::checkCompileErrors(unsigned int shaderOrProgram, const std::string& type) {
+    int success;
+    char infoLog[1024];
+
+    if (type != "PROGRAM") {
+        glGetShaderiv(shaderOrProgram, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(shaderOrProgram, 1024, nullptr, infoLog);
+            throw std::runtime_error("SHADER_COMPILATION_ERROR of type: " + type + "\n" + infoLog);
+        }
+    } else {
+        glGetProgramiv(shaderOrProgram, GL_LINK_STATUS, &success);
+        if (!success) {
+            glGetProgramInfoLog(shaderOrProgram, 1024, nullptr, infoLog);
+            throw std::runtime_error("PROGRAM_LINKING_ERROR of type: " + type + "\n" + infoLog);
+        }
+    }
+}
+
+/**
+ * @brief Constructs a ShaderManager by loading, compiling, and linking shaders using RAII.
+ *
+ * @param vertexPath Path to the vertex shader GLSL source file.
+ * @param fragmentPath Path to the fragment shader GLSL source file.
+ */
+ShaderManager::ShaderManager(const std::string& vertexPath, const std::string& fragmentPath) : programID(0) {
+    std::string vertexCode = loadShaderSource(vertexPath);
+    std::string fragmentCode = loadShaderSource(fragmentPath);
+
+    const char* vShaderCode = vertexCode.c_str();
+    const char* fShaderCode = fragmentCode.c_str();
+
+    // RAII wrappers guarantee exception safety and zero resource leaks on failure
+    ShaderHandle vertexShader(GL_VERTEX_SHADER);
+    ShaderHandle fragmentShader(GL_FRAGMENT_SHADER);
+    ProgramHandle program;
+
+    glShaderSource(vertexShader.get(), 1, &vShaderCode, nullptr);
+    glCompileShader(vertexShader.get());
+    checkCompileErrors(vertexShader.get(), "VERTEX");
+
+    glShaderSource(fragmentShader.get(), 1, &fShaderCode, nullptr);
+    glCompileShader(fragmentShader.get());
+    checkCompileErrors(fragmentShader.get(), "FRAGMENT");
+
+    glAttachShader(program.get(), vertexShader.get());
+    glAttachShader(program.get(), fragmentShader.get());
+    glLinkProgram(program.get());
+    checkCompileErrors(program.get(), "PROGRAM");
+
+    // Successfully linked - release program ownership to member variable
+    programID = program.release();
+}
+
+/**
+ * @brief Destroys the ShaderManager and releases the compiled shader program.
  */
 ShaderManager::~ShaderManager() {
     if (programID != 0) {
@@ -65,101 +104,31 @@ ShaderManager::~ShaderManager() {
 }
 
 /**
- * @brief Activates the shader program in the current rendering context.
- *
- * @author Bosko Mijin
- * @since 2026-02
+ * @brief Activates the shader program for rendering use.
  */
 void ShaderManager::use() const {
     glUseProgram(programID);
 }
 
 /**
- * @brief Retrieves the raw OpenGL program ID handle.
+ * @brief Sets a float uniform variable in the active shader program.
  *
- * @return GLuint Program ID.
- *
- * @author Bosko Mijin
- * @since 2026-02
+ * @param name Name of the uniform variable in the GLSL code.
+ * @param value Float value to assign.
  */
-GLuint ShaderManager::getID() const {
-    return programID;
+void ShaderManager::setFloat(const std::string& name, float value) const {
+    glUniform1f(glGetUniformLocation(programID, name.c_str()), value);
 }
 
 /**
- * @brief Updates a scalar float uniform variable.
+ * @brief Sets a 2-component vector uniform variable in the active shader program.
  *
- * @param name Uniform identifier string.
- * @param value Floating-point value.
- *
- * @author Bosko Mijin
- * @since 2026-02
+ * @param name Name of the uniform variable in the GLSL code.
+ * @param x First component value (e.g., width).
+ * @param y Second component value (e.g., height).
  */
-void ShaderManager::setFloat(std::string_view name, float value) const {
-    glUniform1f(glGetUniformLocation(programID, name.data()), value);
-}
-
-/**
- * @brief Updates a 2D vector uniform variable.
- *
- * @param name Uniform identifier string.
- * @param x X component.
- * @param y Y component.
- *
- * @author Bosko Mijin
- * @since 2026-02
- */
-void ShaderManager::setVec2(std::string_view name, float x, float y) const {
-    glUniform2f(glGetUniformLocation(programID, name.data()), x, y);
-}
-
-/**
- * @brief Reads shader file contents from storage into a string buffer.
- *
- * @param filepath Path of the target file.
- * @return std::string Entire source file content.
- *
- * @author Bosko Mijin
- * @since 2026-02
- */
-std::string ShaderManager::loadShaderFile(std::string_view filepath) {
-    // Uniform initialization {} used to prevent Most Vexing Parse ambiguity
-    std::ifstream file{std::string(filepath)};
-    if (!file.is_open()) {
-        throw std::runtime_error(std::string("Failed to open shader file: ") + std::string(filepath));
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-/**
- * @brief Compiles source code into a target OpenGL shader object with error logging.
- *
- * @param type Shader type enum (e.g. GL_VERTEX_SHADER).
- * @param source Source code text.
- * @return GLuint Compiled shader handle.
- *
- * @author Bosko Mijin
- * @since 2026-02
- */
-GLuint ShaderManager::compileShader(GLenum type, std::string_view source) {
-    GLuint shader = glCreateShader(type);
-    const char* src = source.data();
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-
-    // Verify compilation status
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        GLchar infoLog[512];
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::string typeStr = (type == GL_VERTEX_SHADER) ? "VERTEX" : "FRAGMENT";
-        throw std::runtime_error(std::string("Failed to compile " + typeStr + " shader:\n") + infoLog);
-    }
-
-    return shader;
+void ShaderManager::setVec2(const std::string& name, float x, float y) const {
+    glUniform2f(glGetUniformLocation(programID, name.c_str()), x, y);
 }
 
 } // namespace swarcs::accretion::graphics

@@ -1,122 +1,77 @@
-/**
- * @file ShaderManager.hpp
- * @brief Manages compilation, linking, and uniform configuration for OpenGL ES shader programs.
- *
- * ShaderManager loads vertex and fragment shaders from disk, compiles them safely,
- * handles program linking, and provides encapsulated methods for binding and uniform updates.
- *
- * @author Bosko Mijin
- * @since 2026-02
- */
-
 #pragma once
 
 #include <string>
-#include <string_view>
-#include <GLES2/gl2.h>
 
 namespace swarcs::accretion::graphics {
 
 /**
- * @brief RAII wrapper for OpenGL ES shader programs and pipeline configuration.
+ * @brief Manages loading, compilation, linking, and uniform binding for OpenGL shaders.
  *
- * Encapsulates raw shader object IDs, file loading logic, compilation error handling,
- * and uniform setter operations.
+ * ShaderManager handles source file reading, shader compilation with error diagnostics,
+ * program linking, and setting uniform variables used during rendering.
  *
  * @author Bosko Mijin
  * @since 2026-02
  */
 class ShaderManager {
 private:
-    GLuint programID = 0; ///< Handle to the linked OpenGL shader program.
+    unsigned int programID; ///< OpenGL handle representing the linked shader program.
 
     /**
-     * @brief Loads raw shader source code from a file on disk.
+     * @brief Loads shader source code from a specified file path.
      *
      * @param filepath Path to the shader source file.
-     * @return std::string File content as a string.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @return std::string The contents of the shader file.
      */
-    std::string loadShaderFile(std::string_view filepath);
+    std::string loadShaderSource(const std::string& filepath);
 
     /**
-     * @brief Compiles an individual shader stage of a given type.
+     * @brief Checks for compilation or linking errors in shaders and programs.
      *
-     * @param type OpenGL shader type (e.g., GL_VERTEX_SHADER, GL_FRAGMENT_SHADER).
-     * @param source Source code string of the shader.
-     * @return GLuint Handle to the compiled shader object.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @param shaderOrProgram OpenGL identifier of the shader or program to check.
+     * @param type String descriptor indicating the type ("VERTEX", "FRAGMENT", or "PROGRAM").
      */
-    GLuint compileShader(GLenum type, std::string_view source);
+    void checkCompileErrors(unsigned int shaderOrProgram, const std::string& type);
 
 public:
     /**
-     * @brief Constructs and initializes a shader manager by loading and linking vertex and fragment shaders.
+     * @brief Constructs a ShaderManager by loading and compiling vertex and fragment shaders.
      *
-     * @param vertexPath Filepath to the vertex shader source.
-     * @param fragmentPath Filepath to the fragment shader source.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @param vertexPath Path to the vertex shader GLSL source file.
+     * @param fragmentPath Path to the fragment shader GLSL source file.
      */
-    ShaderManager(std::string_view vertexPath, std::string_view fragmentPath);
+    ShaderManager(const std::string& vertexPath, const std::string& fragmentPath);
 
     /**
-     * @brief Destroys the shader manager and frees the OpenGL program resource.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @brief Destroys the ShaderManager and releases the compiled shader program.
      */
     ~ShaderManager();
 
-    // Delete copy operations to maintain unique resource ownership under RAII
+    // Delete copy constructor and assignment operator to prevent duplicate resource management
     ShaderManager(const ShaderManager&) = delete;
     ShaderManager& operator=(const ShaderManager&) = delete;
 
     /**
-     * @brief Binds the shader program for use in the rendering pipeline.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @brief Activates the shader program for rendering use.
      */
     void use() const;
 
     /**
-     * @brief Returns the raw OpenGL program identifier.
+     * @brief Sets a float uniform variable in the active shader program.
      *
-     * @return GLuint Program handle.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @param name Name of the uniform variable in the GLSL code.
+     * @param value Float value to assign.
      */
-    GLuint getID() const;
+    void setFloat(const std::string& name, float value) const;
 
     /**
-     * @brief Sets a floating-point uniform variable in the shader program.
+     * @brief Sets a 2-component vector uniform variable in the active shader program.
      *
-     * @param name Name of the uniform variable in GLSL source.
-     * @param value Floating-point value to assign.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
+     * @param name Name of the uniform variable in the GLSL code.
+     * @param x First component value (e.g., width).
+     * @param y Second component value (e.g., height).
      */
-    void setFloat(std::string_view name, float value) const;
-
-    /**
-     * @brief Sets a 2D vector uniform variable in the shader program.
-     *
-     * @param name Name of the uniform variable in GLSL source.
-     * @param x X component of the vector.
-     * @param y Y component of the vector.
-     *
-     * @author Bosko Mijin
-     * @since 2026-02
-     */
-    void setVec2(std::string_view name, float x, float y) const;
+    void setVec2(const std::string& name, float x, float y) const;
 };
 
 } // namespace swarcs::accretion::graphics

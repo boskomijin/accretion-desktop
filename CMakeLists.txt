@@ -27,6 +27,10 @@ add_executable(AccretionDesktop
         src/swarcs/accretion/graphics/FullScreenQuad.cpp
         include/swarcs/accretion/graphics/FullScreenQuad.hpp
         include/swarcs/accretion/graphics/IRenderable.hpp
+        include/swarcs/accretion/graphics/ShaderHandle.hpp
+        src/swarcs/accretion/graphics/ShaderHandle.cpp
+        include/swarcs/accretion/graphics/ProgramHandle.hpp
+        src/swarcs/accretion/graphics/ProgramHandle.cpp
 )
 
 # Link necessary platform, windowing, OpenGL ES, EGL, and Wayland libraries privately to the target

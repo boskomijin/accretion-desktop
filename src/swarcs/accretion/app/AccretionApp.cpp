@@ -1,4 +1,5 @@
 #include "swarcs/accretion/app/AccretionApp.hpp"
+#include <GLES2/gl2.h>
 #include <chrono>
 
 namespace swarcs::accretion::app {
