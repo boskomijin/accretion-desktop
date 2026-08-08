@@ -31,10 +31,10 @@
 int main() {
     try {
         // 1. Initialize platform infrastructure (X11 Spanned Window spanning both displays)
-        auto window = std::make_unique<swarcs::accretion::platform::X11Window>("Jarvis Wallpaper Spanned");
+        const auto window = std::make_unique<swarcs::accretion::platform::X11Window>("Jarvis Wallpaper Spanned");
 
         // 2. Initialize graphics context (EGL context automatically binds upon construction)
-        auto eglContext = std::make_unique<swarcs::accretion::platform::EGLManager>(
+        const auto eglContext = std::make_unique<swarcs::accretion::platform::EGLManager>(
             window->getNativeDisplay(),
             window->getNativeWindow()
         );
@@ -42,14 +42,10 @@ int main() {
         std::cout << "Graphics context successfully initialized.\n";
 
         // 3. Create renderable graphics resources (Full-screen quad for shader execution)
-        auto scene = std::make_unique<swarcs::accretion::graphics::FullScreenQuad>();
+        const auto scene = std::make_unique<swarcs::accretion::graphics::FullScreenQuad>();
 
-        // 4. Perform Dependency Injection (DI) wire-up into the application container
-        swarcs::accretion::app::AccretionApp app(
-            std::move(window),
-            std::move(eglContext),
-            std::move(scene)
-        );
+        // 4. Perform Dependency Injection (DI) via references (*window, *eglContext, *scene)
+        swarcs::accretion::app::AccretionApp app(*window, *eglContext, *scene);
 
         // 5. Start the core application loop
         app.run();
