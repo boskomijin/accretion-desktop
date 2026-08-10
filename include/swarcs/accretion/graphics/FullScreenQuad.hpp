@@ -1,26 +1,22 @@
 #pragma once
 
 #include "swarcs/accretion/graphics/IRenderable.hpp"
-#include <GLES2/gl2.h>
 
 namespace swarcs::accretion::graphics {
 
     /**
      * @brief Represents a full-screen quad geometry used for post-processing and shader backgrounds.
      *
-     * FullScreenQuad generates and manages a Vertex Buffer Object (VBO) containing
-     * two triangles covering normalized device coordinates (-1 to 1) for rendering wallpaper shaders.
+     * FullScreenQuad renders a procedural full-screen triangle using gl_VertexID,
+     * completely eliminating the need for Vertex Buffer Objects (VBOs) or vertex attributes.
      *
      * @author Bosko Mijin
      * @since 2026-02
      */
     class FullScreenQuad : public IRenderable {
-    private:
-        GLuint vbo = 0; ///< Vertex Buffer Object handle storing quad vertex positions.
-
     public:
         /**
-         * @brief Constructs the full-screen quad and initializes vertex buffer data.
+         * @brief Constructs the full-screen quad.
          *
          * @author Bosko Mijin
          * @since 2026-02
@@ -28,19 +24,19 @@ namespace swarcs::accretion::graphics {
         FullScreenQuad();
 
         /**
-         * @brief Destroys the full-screen quad and releases GPU buffer resources.
+         * @brief Destroys the full-screen quad.
          *
          * @author Bosko Mijin
          * @since 2026-02
          */
         ~FullScreenQuad() override;
 
-        // Delete copy operations to ensure unique ownership of the underlying GPU buffer resource
+        // Delete copy operations
         FullScreenQuad(const FullScreenQuad&) = delete;
         FullScreenQuad& operator=(const FullScreenQuad&) = delete;
 
         /**
-         * @brief Binds the vertex buffer attributes and issues a draw call for the quad.
+         * @brief Issues a draw call for the procedural full-screen triangle.
          *
          * @author Bosko Mijin
          * @since 2026-02
