@@ -1,5 +1,5 @@
 /**
- * @file FullScreenQuad.cpp
+* @file FullScreenQuad.cpp
  * @brief Implementation of full-screen quad rendering using client-side vertex arrays.
  *
  * @author Bosko Mijin
@@ -11,14 +11,20 @@
 
 namespace swarcs::accretion::graphics {
 
+    /**
+     * @brief Constructs the full-screen quad.
+     */
     FullScreenQuad::FullScreenQuad() = default;
 
+    /**
+     * @brief Destroys the full-screen quad.
+     */
     FullScreenQuad::~FullScreenQuad() = default;
 
     /**
-     * @brief Issues a draw call for the full-screen triangle using a client-side vertex array.
+     * @brief Submits the full-screen quad to the renderer for drawing.
      */
-    void FullScreenQuad::draw() const {
+    void FullScreenQuad::submit(IRenderer& /*renderer*/, const FrameContext& /*context*/) const {
         static const GLfloat vertices[] = {
             -1.0f, -1.0f,
              3.0f, -1.0f,

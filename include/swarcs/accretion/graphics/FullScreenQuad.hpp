@@ -7,7 +7,7 @@ namespace swarcs::accretion::graphics {
     /**
      * @brief Represents a full-screen quad geometry used for post-processing and shader backgrounds.
      *
-     * FullScreenQuad renders a procedural full-screen triangle using gl_VertexID,
+     * FullScreenQuad renders a procedural full-screen triangle using client-side vertex arrays,
      * completely eliminating the need for Vertex Buffer Objects (VBOs) or vertex attributes.
      *
      * @author Bosko Mijin
@@ -36,12 +36,15 @@ namespace swarcs::accretion::graphics {
         FullScreenQuad& operator=(const FullScreenQuad&) = delete;
 
         /**
-         * @brief Issues a draw call for the procedural full-screen triangle.
+         * @brief Submits the full-screen quad to the renderer for drawing.
+         *
+         * @param renderer Reference to the active graphics renderer.
+         * @param context Per-frame timing and resolution data.
          *
          * @author Bosko Mijin
          * @since 2026-02
          */
-        void draw() const override;
+        void submit(IRenderer& renderer, const FrameContext& context) const override;
     };
 
 } // namespace swarcs::accretion::graphics
