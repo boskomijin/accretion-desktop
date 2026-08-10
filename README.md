@@ -1,6 +1,6 @@
 # AccretionDesktop
 
-**AccretionDesktop** is a modern, high-performance Linux desktop wallpaper engine built in **C++23** and **OpenGL ES 2.0**, designed to render dynamic, real-time shader animations seamlessly across multi-monitor setups (spanned displays).
+**AccretionDesktop** is a modern, high-performance Linux desktop wallpaper engine built in **C++23** and **OpenGL ES 3.0**, designed to render dynamic, real-time shader animations seamlessly across multi-monitor setups (spanned displays).
 
 ---
 
@@ -8,8 +8,8 @@
 
 The project strictly follows clean architecture, polymorphism, and **SOLID** principles, separating platform infrastructure, graphics contexts, and rendering logic:
 
-* **Dependency Injection (DI)**: Core subsystems (`IWindow`, `IGraphicsContext`, `IRenderable`) are injected into the application loop (`AccretionApp`), ensuring high testability and modularity.
-* **RAII (Resource Acquisition Is Initialization)**: All system handles (X11 displays, windows, EGL contexts, GPU buffers, shader programs) are safely managed via standard smart pointers and RAII wrappers.
+* **Dependency Injection (DI)**: Core subsystems (`IWindow`, `IGraphicsContext`, `IRenderable`, `IRenderer`) are injected into the application loop (`AccretionApp`), ensuring high testability and modularity.
+* **RAII (Resource Acquisition Is Initialization)**: All system handles (X11 displays, windows, EGL contexts, GPU resource wrappers via `ProgramHandle`/`ShaderHandle`) are safely managed via standard smart pointers and RAII wrappers.
 * **Multi-Monitor Spanning**: Automatically detects physical monitors using the **X11 XRandR** extension to generate a unified high-resolution wallpaper canvas spanning all connected screens.
 
 ---
@@ -18,12 +18,12 @@ The project strictly follows clean architecture, polymorphism, and **SOLID** pri
 
 * **Language**: C++23
 * **Build System**: CMake (Minimum version 3.25)
-* **Graphics API**: OpenGL ES 2.0, EGL
-* **Windowing Systems**: X11 (with XRandR support), Wayland (experimental support via `WaylandSurface`)
+* **Graphics API**: OpenGL ES 3.0, EGL (GLSL ES 300 shaders)
+* **Windowing Systems**: X11 (with XRandR support), Wayland (experimental groundwork via `WaylandSurface`)
 * **Required System Libraries**:
-    * `libX11`, `libXrandr`
-    * `libEGL`, `libGLESv2`, `libGLX`, `opengl`
-    * `wayland-client`, `wayland-egl`
+  * `libX11`, `libXrandr`
+  * `libEGL`, `libGLESv2`, `libGLX`, `opengl`
+  * `wayland-client`, `wayland-egl`
 
 ---
 
@@ -37,18 +37,22 @@ sudo apt install build-essential cmake libx11-dev libxrandr-dev libegl1-mesa-dev
 ```
 
 ### 2. Clone and Build
-
+```bash
 git clone [https://github.com/your-username/accretion-desktop.git](https://github.com/your-username/accretion-desktop.git)
 cd accretion-desktop
+```
 
-# Create build directory and configure with CMake
+#### Create build directory and configure with CMake
+```bash
 cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug
+```
 
-# Compile the project
+#### Compile the project
+```bash
 cmake --build cmake-build-debug --target AccretionDesktop -j$(nproc)
 ```
 
-3. Run the Application
+### 3. Run the Application
    Execute the compiled binary from the project root (so relative shader paths resolve correctly):
 
 ```bash
@@ -63,33 +67,44 @@ Project Structure
 accretion-desktop/
 ├── CMakeLists.txt
 ├── main.cpp
+├── README.md
+├── shaders/
+│   ├── fragment.glsl
+│   └── vertex.glsl
 ├── include/
 │   └── swarcs/
 │       └── accretion/
 │           ├── app/
 │           │   └── AccretionApp.hpp
-│           ├── platform/
-│           │   ├── IWindow.hpp
-│           │   ├── IGraphicsContext.hpp
-│           │   ├── X11Window.hpp
-│           │   ├── EGLManager.hpp
-│           │   └── WaylandSurface.hpp
-│           └── graphics/
-│               ├── IRenderable.hpp
-│               ├── FullScreenQuad.hpp
-│               └── ShaderManager.hpp
+│           ├── graphics/
+│           │   ├── FrameContext.hpp
+│           │   ├── FullScreenQuad.hpp
+│           │   ├── IRenderable.hpp
+│           │   ├── IRenderer.hpp
+│           │   ├── OpenGLRenderer.hpp
+│           │   ├── ProgramHandle.hpp
+│           │   ├── ShaderHandle.hpp
+│           │   └── ShaderManager.hpp
+│           └── platform/
+│               ├── EGLManager.hpp
+│               ├── IGraphicsContext.hpp
+│               ├── IWindow.hpp
+│               ├── WaylandSurface.hpp
+│               └── X11Window.hpp
 └── src/
-└── swarcs/
-└── accretion/
-├── app/
-│   └── AccretionApp.cpp
-├── platform/
-│   ├── X11Window.cpp
-│   ├── EGLManager.cpp
-│   └── WaylandSurface.cpp
-└── graphics/
-├── FullScreenQuad.cpp
-└── ShaderManager.cpp
+    └── swarcs/
+        └── accretion/
+            ├── app/
+            │   └── AccretionApp.cpp
+            ├── graphics/
+            │   ├── FullScreenQuad.cpp
+            │   ├── ProgramHandle.cpp
+            │   ├── ShaderHandle.cpp
+            │   └── ShaderManager.cpp
+            └── platform/
+                ├── EGLManager.cpp
+                ├── WaylandSurface.cpp
+                └── X11Window.cpp
 ```
 
 Author
