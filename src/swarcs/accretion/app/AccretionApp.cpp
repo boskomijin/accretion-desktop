@@ -36,7 +36,10 @@ namespace swarcs::accretion::app {
         const auto startTime = std::chrono::steady_clock::now();
         auto lastFrameTime = startTime;
 
-        while (window.processEvents()) {
+        // Privremeno forsiramo beskonačnu petlju nezavisno od X11 eventova
+        while (true) {
+            window.processEvents(); // samo praznimo event queue da se prozor ne zaledi
+
             const auto currentTime = std::chrono::steady_clock::now();
 
             graphics::FrameContext frameContext;
