@@ -33,6 +33,28 @@ private:
     int width = 0;              ///< Spanned total window width in pixels.
     int height = 0;             ///< Spanned total window height in pixels.
 
+    /**
+     * @brief Encapsulates 2D window position and dimensions.
+     */
+    struct ScreenGeometry {
+        int x = 0;
+        int y = 0;
+        int width = 0;
+        int height = 0;
+    };
+
+    /**
+     * @brief Queries XRandR to compute the bounding box across all active monitors.
+     *
+     * @return ScreenGeometry Calculated position and spanned resolution.
+     */
+    ScreenGeometry querySpannedGeometry() const;
+
+    /**
+     * @brief Applies EWMH desktop window type hints to make the window behave as wallpaper.
+     */
+    void setDesktopWindowHints() const;
+
 public:
     /**
      * @brief Constructs an X11 window spanning across all available monitors and sets desktop hints.
