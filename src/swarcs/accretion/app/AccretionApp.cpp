@@ -25,7 +25,7 @@ AccretionApp::AccretionApp(platform::IWindow& windowImpl,
 /**
  * @brief Executes the main application lifecycle loop.
  *
- * Tracks real-time elapsed duration for animations, updates uniform variables
+ * Tracks monotonic elapsed duration for animations, updates uniform variables
  * (such as time and resolution) in the shader program, performs frame clearing,
  * triggers polymorphic rendering, and presents frames via buffer swapping.
  *
@@ -33,13 +33,13 @@ AccretionApp::AccretionApp(platform::IWindow& windowImpl,
  * @since 2026-02
  */
 void AccretionApp::run() {
-    // Record the starting point of the application execution time
-    auto startTime = std::chrono::high_resolution_clock::now();
+    // Record the starting point of the monotonic execution time
+    const auto startTime = std::chrono::steady_clock::now();
 
     // Loop continuously while window events are processed and window remains open
     while (window.processEvents()) {
-        // Calculate elapsed time from start for shader time-based animations
-        auto currentTime = std::chrono::high_resolution_clock::now();
+        // Calculate elapsed time from start using steady_clock for safe animation timing
+        const auto currentTime = std::chrono::steady_clock::now();
         float elapsedTime = std::chrono::duration<float>(currentTime - startTime).count();
 
         // Bind the shader program for the current frame
