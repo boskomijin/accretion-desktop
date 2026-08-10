@@ -6,10 +6,10 @@
 
 ## Architecture & Design Principles
 
-The project strictly follows clean architecture, polymorphism, and **SOLID** principles, separating platform infrastructure, graphics contexts, and rendering logic:
+The project separates platform integration, rendering backends, scene representation, and simulation logic so that the graphics API can evolve independently from the application and astrophysical models:
 
-* **Dependency Injection (DI)**: Core subsystems (`IWindow`, `IGraphicsContext`, `IRenderable`, `IRenderer`) are injected into the application loop (`AccretionApp`), ensuring high testability and modularity.
-* **RAII (Resource Acquisition Is Initialization)**: All system handles (X11 displays, windows, EGL contexts, GPU resource wrappers via `ProgramHandle`/`ShaderHandle`) are safely managed via standard smart pointers and RAII wrappers.
+* **Dependency Injection (DI)**: Core subsystems (`IWindow`, `IGraphicsContext`, `IRenderable`, `IRenderer`) are injected into the application loop (`AccretionApp`), ensuring modularity and clear ownership.
+* **RAII (Resource Acquisition Is Initialization)**: All system handles (X11 displays, windows, EGL contexts, and GPU resource wrappers via `ProgramHandle`/`ShaderHandle`) are safely managed via standard smart pointers and custom RAII wrappers.
 * **Multi-Monitor Spanning**: Automatically detects physical monitors using the **X11 XRandR** extension to generate a unified high-resolution wallpaper canvas spanning all connected screens.
 
 ---
@@ -22,7 +22,7 @@ The project strictly follows clean architecture, polymorphism, and **SOLID** pri
 * **Windowing Systems**: X11 (with XRandR support), Wayland (experimental groundwork via `WaylandSurface`)
 * **Required System Libraries**:
   * `libX11`, `libXrandr`
-  * `libEGL`, `libGLESv2`, `libGLX`, `opengl`
+  * `libEGL`, `libGLESv2`
   * `wayland-client`, `wayland-egl`
 
 ---
@@ -38,7 +38,7 @@ sudo apt install build-essential cmake libx11-dev libxrandr-dev libegl1-mesa-dev
 
 ### 2. Clone and Build
 ```bash
-git clone [https://github.com/your-username/accretion-desktop.git](https://github.com/your-username/accretion-desktop.git)
+git clone [https://github.com/boskomijin/accretion-desktop.git](https://github.com/boskomijin/accretion-desktop.git)
 cd accretion-desktop
 ```
 
