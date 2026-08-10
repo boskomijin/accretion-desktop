@@ -46,7 +46,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    WaylandSurface(struct wl_display* display, struct wl_compositor* compositor, EGLDisplay eglDisplay, EGLConfig config, int width, int height);
+    WaylandSurface([[maybe_unused]] struct wl_display* display, struct wl_compositor* compositor, EGLDisplay eglDisplay, EGLConfig config, int width, int height);
 
     /**
      * @brief Destroys the Wayland surface, EGL window, and releases resources.
