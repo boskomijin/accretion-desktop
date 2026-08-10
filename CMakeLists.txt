@@ -28,6 +28,9 @@ add_executable(AccretionDesktop
         src/swarcs/accretion/graphics/ShaderHandle.cpp
         src/swarcs/accretion/graphics/ProgramHandle.cpp
         src/swarcs/accretion/graphics/FullScreenQuad.cpp
+        include/swarcs/accretion/physics/Constants.hpp
+        include/swarcs/accretion/physics/Relativity.hpp
+        include/swarcs/accretion/physics/Gravity.hpp
 )
 
 # Include directories configuration
