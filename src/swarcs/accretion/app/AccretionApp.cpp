@@ -32,7 +32,7 @@ namespace swarcs::accretion::app {
      * @author Bosko Mijin
      * @since 2026-02
      */
-    void AccretionApp::run() {
+    void AccretionApp::run() const {
         const auto startTime = std::chrono::steady_clock::now();
         auto lastFrameTime = startTime;
 

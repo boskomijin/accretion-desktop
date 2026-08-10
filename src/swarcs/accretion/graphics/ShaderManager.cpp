@@ -12,7 +12,6 @@
 #include <GLES2/gl2.h>
 #include <fstream>
 #include <sstream>
-#include <iostream>
 #include <stdexcept>
 
 namespace swarcs::accretion::graphics {

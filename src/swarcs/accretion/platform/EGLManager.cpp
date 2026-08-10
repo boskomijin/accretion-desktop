@@ -107,7 +107,7 @@ void EGLManager::swapBuffers() {
  * @author Bosko Mijin
  * @since 2026-02
  */
-void EGLManager::makeCurrent() {
+void EGLManager::makeCurrent() const {
     if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
         throw std::runtime_error("Failed to make EGL context current!");
     }

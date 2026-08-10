@@ -39,7 +39,7 @@ namespace swarcs::accretion::graphics {
          * @brief Retrieves the raw OpenGL program identifier.
          * @return unsigned int The program ID.
          */
-        unsigned int get() const;
+        [[nodiscard]] unsigned int get() const;
 
         /**
          * @brief Releases ownership of the program ID without deleting it.

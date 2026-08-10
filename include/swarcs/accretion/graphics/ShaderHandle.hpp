@@ -41,7 +41,7 @@ namespace swarcs::accretion::graphics {
          * @brief Retrieves the raw OpenGL shader identifier.
          * @return unsigned int The shader ID.
          */
-        unsigned int get() const;
+        [[nodiscard]] unsigned int get() const;
 
         /**
          * @brief Releases ownership of the shader ID without deleting it.

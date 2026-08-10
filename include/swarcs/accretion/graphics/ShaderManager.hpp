@@ -23,7 +23,7 @@ private:
      * @param filepath Path to the shader source file.
      * @return std::string The contents of the shader file.
      */
-    std::string loadShaderSource(const std::string& filepath);
+    static std::string loadShaderSource(const std::string& filepath);
 
     /**
      * @brief Checks for compilation or linking errors in shaders and programs.
@@ -31,7 +31,7 @@ private:
      * @param shaderOrProgram OpenGL identifier of the shader or program to check.
      * @param type String descriptor indicating the type ("VERTEX", "FRAGMENT", or "PROGRAM").
      */
-    void checkCompileErrors(unsigned int shaderOrProgram, const std::string& type);
+    static void checkCompileErrors(unsigned int shaderOrProgram, const std::string& type);
 
 public:
     /**

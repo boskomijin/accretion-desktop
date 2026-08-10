@@ -25,7 +25,7 @@ namespace swarcs::accretion::platform {
  * @author Bosko Mijin
  * @since 2026-02
  */
-class EGLManager : public IGraphicsContext {
+class EGLManager final : public IGraphicsContext {
 private:
     EGLDisplay eglDisplay = EGL_NO_DISPLAY; ///< Handle to the EGL display connection.
     EGLContext eglContext = EGL_NO_CONTEXT; ///< Handle to the EGL rendering context.
@@ -70,7 +70,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    void makeCurrent();
+    void makeCurrent() const;
 
     /**
      * @brief Retrieves the underlying EGL display handle.
@@ -80,7 +80,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    EGLDisplay getDisplay() const;
+    [[nodiscard]] EGLDisplay getDisplay() const;
 
     /**
      * @brief Retrieves the underlying EGL rendering context handle.
@@ -90,7 +90,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    EGLContext getContext() const;
+    [[nodiscard]] EGLContext getContext() const;
 
     /**
      * @brief Retrieves the underlying EGL window surface handle.
@@ -100,7 +100,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    EGLSurface getSurface() const;
+    [[nodiscard]] EGLSurface getSurface() const;
 
     /**
      * @brief Retrieves the selected EGL configuration.
@@ -110,7 +110,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    EGLConfig getConfig() const;
+    [[nodiscard]] EGLConfig getConfig() const;
 };
 
 } // namespace swarcs::accretion::platform

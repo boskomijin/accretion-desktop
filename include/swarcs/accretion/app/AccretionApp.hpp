@@ -50,7 +50,7 @@ namespace swarcs::accretion::app {
          * @author Bosko Mijin
          * @since 2026-02
          */
-        void run();
+        void run() const;
     };
 
 } // namespace swarcs::accretion::app

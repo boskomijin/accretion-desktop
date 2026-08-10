@@ -25,7 +25,7 @@ namespace swarcs::accretion::graphics {
      * @brief Submits the full-screen quad to the renderer for drawing.
      */
     void FullScreenQuad::submit(IRenderer& /*renderer*/, const FrameContext& /*context*/) const {
-        static const GLfloat vertices[] = {
+        static constexpr GLfloat vertices[] = {
             -1.0f, -1.0f,
              3.0f, -1.0f,
             -1.0f,  3.0f
