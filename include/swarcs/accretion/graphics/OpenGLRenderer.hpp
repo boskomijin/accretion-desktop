@@ -10,7 +10,7 @@
 
 #include "swarcs/accretion/graphics/IRenderer.hpp"
 #include "swarcs/accretion/graphics/ShaderManager.hpp"
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <string>
 
 namespace swarcs::accretion::graphics {
