@@ -13,6 +13,7 @@
 #include "swarcs/accretion/platform/X11Window.hpp"
 #include "swarcs/accretion/platform/EGLManager.hpp"
 #include "swarcs/accretion/graphics/FullScreenQuad.hpp"
+#include "swarcs/accretion/graphics/OpenGLRenderer.hpp"
 #include <iostream>
 #include <memory>
 #include <exception>
@@ -44,10 +45,16 @@ int main() {
         // 3. Create renderable graphics resources (Full-screen quad for shader execution)
         const auto scene = std::make_unique<swarcs::accretion::graphics::FullScreenQuad>();
 
-        // 4. Perform Dependency Injection (DI) via references (*window, *eglContext, *scene)
-        swarcs::accretion::app::AccretionApp app(*window, *eglContext, *scene);
+        // 4. Create the API-agnostic OpenGL renderer instance encapsulating shader management
+        auto renderer = std::make_unique<swarcs::accretion::graphics::OpenGLRenderer>(
+            "shaders/vertex.glsl",
+            "shaders/fragment.glsl"
+        );
 
-        // 5. Start the core application loop
+        // 5. Perform Dependency Injection (DI) via references and ownership transfer
+        swarcs::accretion::app::AccretionApp app(*window, *eglContext, std::move(renderer), *scene);
+
+        // 6. Start the core application loop
         app.run();
     } catch (const std::exception& e) {
         // Catch and report any fatal exceptions during execution
