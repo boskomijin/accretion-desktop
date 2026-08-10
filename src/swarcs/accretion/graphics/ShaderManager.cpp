@@ -8,8 +8,6 @@
 
 #include "swarcs/accretion/graphics/ShaderManager.hpp"
 #include "swarcs/accretion/graphics/ShaderHandle.hpp"
-#include "swarcs/accretion/graphics/ProgramHandle.hpp"
-#include <GLES2/gl2.h>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -64,7 +62,7 @@ void ShaderManager::checkCompileErrors(unsigned int shaderOrProgram, const std::
  * @param vertexPath Path to the vertex shader GLSL source file.
  * @param fragmentPath Path to the fragment shader GLSL source file.
  */
-ShaderManager::ShaderManager(const std::string& vertexPath, const std::string& fragmentPath) : programID(0) {
+ShaderManager::ShaderManager(const std::string& vertexPath, const std::string& fragmentPath) {
     std::string vertexCode = loadShaderSource(vertexPath);
     std::string fragmentCode = loadShaderSource(fragmentPath);
 
@@ -74,7 +72,7 @@ ShaderManager::ShaderManager(const std::string& vertexPath, const std::string& f
     // RAII wrappers guarantee exception safety and zero resource leaks on failure
     ShaderHandle vertexShader(GL_VERTEX_SHADER);
     ShaderHandle fragmentShader(GL_FRAGMENT_SHADER);
-    ProgramHandle program;
+    ProgramHandle compiledProgram;
 
     glShaderSource(vertexShader.get(), 1, &vShaderCode, nullptr);
     glCompileShader(vertexShader.get());
@@ -84,50 +82,41 @@ ShaderManager::ShaderManager(const std::string& vertexPath, const std::string& f
     glCompileShader(fragmentShader.get());
     checkCompileErrors(fragmentShader.get(), "FRAGMENT");
 
-    glAttachShader(program.get(), vertexShader.get());
-    glAttachShader(program.get(), fragmentShader.get());
-    glLinkProgram(program.get());
-    checkCompileErrors(program.get(), "PROGRAM");
+    glAttachShader(compiledProgram.get(), vertexShader.get());
+    glAttachShader(compiledProgram.get(), fragmentShader.get());
+    glLinkProgram(compiledProgram.get());
+    checkCompileErrors(compiledProgram.get(), "PROGRAM");
 
-    // Successfully linked - release program ownership to member variable
-    programID = program.release();
-}
-
-/**
- * @brief Destroys the ShaderManager and releases the compiled shader program.
- */
-ShaderManager::~ShaderManager() {
-    if (programID != 0) {
-        glDeleteProgram(programID);
-    }
+    // Move ownership directly into member variable — no raw release/reassign needed
+    program = std::move(compiledProgram);
 }
 
 /**
  * @brief Activates the shader program for rendering use.
  */
 void ShaderManager::use() const {
-    glUseProgram(programID);
+    glUseProgram(program.get());
 }
 
-    /**
-     * @brief Sets a float uniform variable in the active shader program.
-     *
-     * @param name Name of the uniform variable in the GLSL code.
-     * @param value Float value to assign.
-     */
-    void ShaderManager::setFloat(const std::string& name, float value) const {
-    glUniform1f(glGetUniformLocation(programID, name.c_str()), value);
+/**
+ * @brief Sets a float uniform variable in the active shader program.
+ *
+ * @param name Name of the uniform variable in the GLSL code.
+ * @param value Float value to assign.
+ */
+void ShaderManager::setFloat(const std::string& name, float value) const {
+    glUniform1f(glGetUniformLocation(program.get(), name.c_str()), value);
 }
 
-    /**
-     * @brief Sets a 2-component vector uniform variable in the active shader program.
-     *
-     * @param name Name of the uniform variable in the GLSL code.
-     * @param x First component value (e.g., width).
-     * @param y Second component value (e.g., height).
-     */
-    void ShaderManager::setVec2(const std::string& name, float x, float y) const {
-    glUniform2f(glGetUniformLocation(programID, name.c_str()), x, y);
+/**
+ * @brief Sets a 2-component vector uniform variable in the active shader program.
+ *
+ * @param name Name of the uniform variable in the GLSL code.
+ * @param x First component value (e.g., width).
+ * @param y Second component value (e.g., height).
+ */
+void ShaderManager::setVec2(const std::string& name, float x, float y) const {
+    glUniform2f(glGetUniformLocation(program.get(), name.c_str()), x, y);
 }
 
 } // namespace swarcs::accretion::graphics

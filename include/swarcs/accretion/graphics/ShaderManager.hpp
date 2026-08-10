@@ -1,6 +1,8 @@
 #pragma once
 
+#include "swarcs/accretion/graphics/ProgramHandle.hpp"
 #include <string>
+#include <GLES3/gl3.h>
 
 namespace swarcs::accretion::graphics {
 
@@ -8,14 +10,14 @@ namespace swarcs::accretion::graphics {
  * @brief Manages loading, compilation, linking, and uniform binding for OpenGL shaders.
  *
  * ShaderManager handles source file reading, shader compilation with error diagnostics,
- * program linking, and setting uniform variables used during rendering.
+ * program linking via RAII, and setting uniform variables used during rendering.
  *
  * @author Bosko Mijin
  * @since 2026-02
  */
 class ShaderManager {
 private:
-    unsigned int programID; ///< OpenGL handle representing the linked shader program.
+    ProgramHandle program; ///< RAII wrapper owning the linked OpenGL shader program.
 
     /**
      * @brief Loads shader source code from a specified file path.
@@ -43,13 +45,17 @@ public:
     ShaderManager(const std::string& vertexPath, const std::string& fragmentPath);
 
     /**
-     * @brief Destroys the ShaderManager and releases the compiled shader program.
+     * @brief Destroys the ShaderManager and releases the compiled shader program via RAII.
      */
-    ~ShaderManager();
+    ~ShaderManager() = default;
 
     // Delete copy constructor and assignment operator to prevent duplicate resource management
     ShaderManager(const ShaderManager&) = delete;
     ShaderManager& operator=(const ShaderManager&) = delete;
+
+    // Allow move semantics if needed, or default them
+    ShaderManager(ShaderManager&&) noexcept = default;
+    ShaderManager& operator=(ShaderManager&&) noexcept = default;
 
     /**
      * @brief Activates the shader program for rendering use.
