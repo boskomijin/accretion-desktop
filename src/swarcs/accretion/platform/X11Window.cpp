@@ -84,27 +84,39 @@ X11Window::X11Window(const std::string_view title) {
         throw std::runtime_error("Failed to open X display!");
     }
 
-    const int screen = DefaultScreen(display);
-    const Window root = RootWindow(display, screen);
+    try {
+        const int screen = DefaultScreen(display);
+        const Window root = RootWindow(display, screen);
 
-    const auto geometry = querySpannedGeometry();
-    width = geometry.width;
-    height = geometry.height;
+        const auto geometry = querySpannedGeometry();
+        width = geometry.width;
+        height = geometry.height;
 
-    std::cout << "Creating spanned wallpaper canvas at (" << geometry.x << ", " << geometry.y
-              << ") with dimensions: " << width << "x" << height << "\n";
+        std::cout << "Creating spanned wallpaper canvas at (" << geometry.x << ", " << geometry.y
+                  << ") with dimensions: " << width << "x" << height << "\n";
 
-    window = XCreateSimpleWindow(display, root, geometry.x, geometry.y, width, height, 0,
-                                 BlackPixel(display, screen), WhitePixel(display, screen));
+        window = XCreateSimpleWindow(display, root, geometry.x, geometry.y, width, height, 0,
+                                     BlackPixel(display, screen), WhitePixel(display, screen));
 
-    setDesktopWindowHints();
+        setDesktopWindowHints();
 
-    XSelectInput(display, window, KeyPressMask | StructureNotifyMask);
-    XMapWindow(display, window);
-    XStoreName(display, window, title.data());
-    XFlush(display);
+        XSelectInput(display, window, KeyPressMask | StructureNotifyMask);
+        XMapWindow(display, window);
+        XStoreName(display, window, title.data());
+        XFlush(display);
 
-    std::cout << "Window successfully configured and set as desktop background.\n";
+        std::cout << "Window successfully configured and set as desktop background.\n";
+    } catch (...) {
+        if (display) {
+            if (window) {
+                XDestroyWindow(display, window);
+            }
+            XCloseDisplay(display);
+            display = nullptr;
+            window = 0;
+        }
+        throw;
+    }
 }
 
 /**
