@@ -1,22 +1,18 @@
 #version 300 es
-
 /**
  * @file vertex.glsl
- * @brief Vertex shader transforming full-screen quad position attributes for OpenGL ES 3.0.
+ * @brief Full-screen triangle vertex shader using gl_VertexID.
  *
  * @author Bosko Mijin
  * @since 2026-02
  */
 
-layout (location = 0) in vec2 aPos;
+precision highp float;
 
 void main() {
-    // Pass raw normalized device coordinates directly to clip space
-    const vec2 positions[3] = vec2[](
-            vec2(-1.0, -1.0),
-            vec2( 3.0, -1.0),
-            vec2(-1.0,  3.0)
-        );
+    // Generates a single large triangle covering the entire screen (-1 to 3) using gl_VertexID
+    float x = float((gl_VertexID & 1) << 2);
+    float y = float((gl_VertexID & 2) << 1);
 
-        gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+    gl_Position = vec4(x - 1.0, y - 1.0, 0.0, 1.0);
 }
