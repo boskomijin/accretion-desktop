@@ -51,7 +51,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    virtual int getWidth() const = 0;
+    [[nodiscard]] virtual int getWidth() const = 0;
 
     /**
      * @brief Retrieves the current height of the window in pixels.
@@ -61,7 +61,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    virtual int getHeight() const = 0;
+    [[nodiscard]] virtual int getHeight() const = 0;
 
     /**
      * @brief Retrieves an opaque pointer to the native display connection.
@@ -71,7 +71,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    virtual void* getNativeDisplay() const = 0;
+    [[nodiscard]] virtual void* getNativeDisplay() const = 0;
 
     /**
      * @brief Retrieves an opaque pointer or handle to the native window surface.
@@ -81,7 +81,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    virtual void* getNativeWindow() const = 0;
+    [[nodiscard]] virtual void* getNativeWindow() const = 0;
 };
 
 } // namespace swarcs::accretion::platform

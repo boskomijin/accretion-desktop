@@ -68,7 +68,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    EGLSurface getEGLSurface() const;
+    [[nodiscard]] EGLSurface getEGLSurface() const;
 
     /**
      * @brief Retrieves the raw Wayland surface pointer.
@@ -78,7 +78,7 @@ public:
      * @author Bosko Mijin
      * @since 2026-02
      */
-    struct wl_surface* getSurface() const;
+    [[nodiscard]] struct wl_surface* getSurface() const;
 };
 
 } // namespace swarcs::accretion::platform
