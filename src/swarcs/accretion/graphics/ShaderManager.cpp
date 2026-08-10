@@ -11,14 +11,15 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <filesystem>
 
 namespace swarcs::accretion::graphics {
 
 /**
- * @brief Loads shader source code from a specified file path.
+ * @brief Loads shader source code from a specified file path, resolving #include directives recursively.
  *
  * @param filepath Path to the shader source file.
- * @return std::string The contents of the shader file.
+ * @return std::string The fully expanded contents of the shader file including all headers.
  */
 std::string ShaderManager::loadShaderSource(const std::string& filepath) {
     std::ifstream file(filepath);
@@ -26,8 +27,44 @@ std::string ShaderManager::loadShaderSource(const std::string& filepath) {
         throw std::runtime_error("Failed to open shader file: " + filepath);
     }
 
+    namespace fs = std::filesystem;
+    fs::path currentPath(filepath);
+    fs::path baseDir = currentPath.parent_path();
+
     std::stringstream buffer;
-    buffer << file.rdbuf();
+    std::string line;
+
+    while (std::getline(file, line)) {
+        // Check if the line is an #include directive
+        if (line.rfind("#include", 0) == 0) {
+            size_t firstQuote = line.find('"');
+            size_t lastQuote = line.rfind('"');
+
+            if (firstQuote != std::string::npos && lastQuote != std::string::npos && lastQuote > firstQuote) {
+                std::string includeFileName = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+
+                // Resolve path relative to the current file's directory
+                fs::path includePath = baseDir / includeFileName;
+
+                // Fallback: if not found locally, try relative to the root shaders directory
+                if (!fs::exists(includePath)) {
+                    includePath = fs::path("shaders") / includeFileName;
+                }
+
+                if (fs::exists(includePath)) {
+                    // Recursively load and append the included shader source
+                    buffer << loadShaderSource(includePath.string()) << "\n";
+                } else {
+                    throw std::runtime_error("Failed to resolve shader include: " + includeFileName + " (resolved from: " + filepath + ")");
+                }
+            } else {
+                buffer << line << "\n";
+            }
+        } else {
+            buffer << line << "\n";
+        }
+    }
+
     return buffer.str();
 }
 
