@@ -110,24 +110,24 @@ void ShaderManager::use() const {
     glUseProgram(programID);
 }
 
-/**
- * @brief Sets a float uniform variable in the active shader program.
- *
- * @param name Name of the uniform variable in the GLSL code.
- * @param value Float value to assign.
- */
-void ShaderManager::setFloat(const std::string& name, float value) const {
+    /**
+     * @brief Sets a float uniform variable in the active shader program.
+     *
+     * @param name Name of the uniform variable in the GLSL code.
+     * @param value Float value to assign.
+     */
+    void ShaderManager::setFloat(const std::string& name, float value) const {
     glUniform1f(glGetUniformLocation(programID, name.c_str()), value);
 }
 
-/**
- * @brief Sets a 2-component vector uniform variable in the active shader program.
- *
- * @param name Name of the uniform variable in the GLSL code.
- * @param x First component value (e.g., width).
- * @param y Second component value (e.g., height).
- */
-void ShaderManager::setVec2(const std::string& name, float x, float y) const {
+    /**
+     * @brief Sets a 2-component vector uniform variable in the active shader program.
+     *
+     * @param name Name of the uniform variable in the GLSL code.
+     * @param x First component value (e.g., width).
+     * @param y Second component value (e.g., height).
+     */
+    void ShaderManager::setVec2(const std::string& name, float x, float y) const {
     glUniform2f(glGetUniformLocation(programID, name.c_str()), x, y);
 }
 
