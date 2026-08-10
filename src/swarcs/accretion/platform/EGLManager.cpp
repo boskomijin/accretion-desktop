@@ -53,9 +53,9 @@ EGLManager::EGLManager(void* nativeDisplay, void* nativeWindow) {
         throw std::runtime_error("No matching EGL configurations found!");
     }
 
-    // Specify OpenGL ES version 2 context creation attributes
+    // Specify OpenGL ES version 3 context creation attributes
     constexpr EGLint ctxAttribs[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_CONTEXT_CLIENT_VERSION, 3,
         EGL_NONE
     };
 
