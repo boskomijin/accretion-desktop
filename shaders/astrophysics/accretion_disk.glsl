@@ -1,67 +1,90 @@
 /**
  * @file accretion_disk.glsl
- * @brief Accretion disk rendering, plasma turbulence, Doppler boosting, and photon ring physics.
+ * @brief High-fidelity accretion disk rendering with relativistic lensing effects.
+ * 
+ * Implements a primary accretion disk, depth-occluded rear hemisphere, and 
+ * relativistic photon rings (crown) using Schwarzschild-like approximations.
  *
- * @author Bosko Mijin
+ * @author Bosko
  * @since 2026-08
  */
 
 precision highp float;
 
-/**
- * @struct AccretionResult
- * @brief Holds the composite color and geometric shape factor of the disk.
- */
 struct AccretionResult {
     vec3 color;
     float shape;
 };
 
 /**
- * @brief Renders the accretion disk, plasma turbulence, Doppler effect, and photon ring.
+ * @brief Renders the accretion disk and relativistic light rings.
  *
- * @param pBh Position relative to the black hole center in warped space.
- * @param eventHorizon Radius of the black hole event horizon.
- * @param t Time variable for plasma animation.
- * @return AccretionResult Resulting color and opacity/shape mask.
+ * @param pBh Screen space position relative to the black hole center.
+ * @param eventHorizon The radius of the event horizon.
+ * @param t Time variable for animation.
+ * @return AccretionResult The color and alpha-mask (shape) of the disk.
  */
 AccretionResult renderAccretionDisk(vec2 pBh, float eventHorizon, float t) {
     vec3 diskColor = vec3(0.0);
-    mat2 diskRot = rotate(0.4);
-    vec2 diskP = pBh * diskRot;
-    float diskAngle = atan(diskP.y, diskP.x);
-    diskP.y *= 3.0;
-    float diskR = length(diskP);
-
-    float diskDist = abs(diskR - 0.72);
-    float diskShape = smoothstep(0.16, 0.0, diskDist);
-
-    if (diskP.y > 0.0 && length(pBh) > eventHorizon && length(pBh) < 0.75) {
-        diskShape += smoothstep(0.12, 0.0, abs(diskP.x)) * smoothstep(0.5, 0.1, length(pBh)) * 0.8;
+    float rBh = length(pBh);
+    
+    // Discard rendering inside the event horizon
+    if (rBh < eventHorizon) {
+        return AccretionResult(vec3(0.0), 0.0);
     }
 
-    float plasma = fbm(vec2(diskAngle * 2.5 - t * 1.2, (diskR - eventHorizon) * 4.0));
+    // Disk perspective and rotation
+    mat2 diskRot = rotate(0.38);
+    vec2 diskP = pBh * diskRot;
+    diskP.y *= 2.1; 
+    
+    float angle = atan(diskP.y, diskP.x);
+    float distFromCenter = length(diskP);
 
-    float v = 0.85;
+    // Plasma turbulence (fbm)
+    float fbm1 = fbm(vec2(angle * 3.0 - t * 0.8, distFromCenter * 3.5));
+    float fbm2 = fbm(vec2(angle * 6.0 + t * 0.4, distFromCenter * 7.0));
+    float cloudMix = clamp(fbm1 * 0.6 + fbm2 * 0.4, 0.0, 1.0);
+
+    // Relativistic Doppler effect
+    float v = 0.82;
     float gamma = 1.0 / sqrt(1.0 - v * v);
-    float doppler = (1.0 + v * cos(diskAngle)) / gamma;
+    float doppler = (1.0 + v * cos(angle)) / gamma;
 
-    vec3 hotColor = mix(vec3(1.0, 0.45, 0.1), vec3(1.0, 0.8, 0.35), plasma);
-    vec3 coldColor = mix(vec3(0.1, 0.4, 0.9), vec3(0.8, 0.2, 0.1), plasma * 0.3);
-    vec3 finalGasColor = mix(hotColor, coldColor, clamp(doppler, 0.0, 1.0));
+    // Color palette
+    vec3 hotColor = mix(vec3(1.0, 0.9, 0.7), vec3(1.0, 0.55, 0.2), cloudMix);
+    vec3 coldColor = mix(vec3(0.55, 0.75, 1.0), vec3(0.2, 0.4, 0.8), cloudMix * 0.4);
+    vec3 gasColor = mix(coldColor, hotColor, clamp(doppler * 0.7 + 0.3, 0.0, 1.0));
 
-    diskColor = finalGasColor * diskShape * (plasma * 1.3 + 0.3) * (doppler * 2.1);
+    // 1. Primary Disk Geometry
+    float diskRadius = 0.68;
+    float diskDist = abs(distFromCenter - diskRadius);
+    float diskShape = smoothstep(0.2, 0.0, diskDist);
+    float thickness = exp(-pow(diskP.y * 1.5, 2.0) * 4.0);
+    
+    // Mask rear hemisphere
+    float backDiskMask = (diskP.y > -0.1) ? smoothstep(eventHorizon * 0.98, eventHorizon * 1.4, rBh) : 1.0;
 
-    float rBh = length(pBh);
-    float ringDist = abs(rBh - (eventHorizon + 0.02));
-    float organicRingFactor = smoothstep(0.025, 0.0, ringDist);
-    float ringDoppler = sin(atan(pBh.y, pBh.x)) * 0.7 + 0.3;
-    vec3 photonRingColor = mix(vec3(1.0, 0.6, 0.25), vec3(0.6, 0.85, 1.0), plasma) * 2.5;
+    // 2. Relativistic Photon Rings (Upper and Lower Crowns)
+    float crownRadius = eventHorizon * 1.08;
+    float crownDist = abs(rBh - crownRadius);
+    
+    // Core calculation for high-frequency light ring
+    float crownCore = exp(-pow(crownDist * 350.0, 1.8));
+    
+    // Vertical fading to prevent halo leakage
+    float fadeTop = smoothstep(-0.01, 0.05, pBh.y) * smoothstep(1.2, 0.35, abs(pBh.x));
+    float fadeBottom = smoothstep(-0.05, 0.01, -pBh.y) * smoothstep(1.2, 0.35, abs(pBh.x));
+    
+    float totalCrownShape = crownCore * (fadeTop + fadeBottom);
+    vec3 crownColor = mix(vec3(0.85, 0.92, 1.0), vec3(1.0, 1.0, 1.0), cloudMix) * 7.0;
 
-    float ambientGlow = smoothstep(0.08, 0.0, abs(rBh - eventHorizon)) * 0.3;
+    // Composition
+    vec3 mainDiskColor = gasColor * diskShape * thickness * (cloudMix * 0.8 + 0.4) * (doppler * 2.0) * backDiskMask;
+    vec3 crownLayerColor = crownColor * totalCrownShape;
 
-    diskColor += photonRingColor * organicRingFactor * (plasma * 0.6 + 0.4) * (ringDoppler * 2.0);
-    diskColor += vec3(0.9, 0.5, 0.2) * ambientGlow;
+    diskColor = mainDiskColor + crownLayerColor;
+    float totalShape = clamp((diskShape * backDiskMask) + totalCrownShape, 0.0, 1.0);
 
-    return AccretionResult(diskColor, diskShape);
+    return AccretionResult(diskColor, totalShape);
 }
