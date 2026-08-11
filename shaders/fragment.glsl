@@ -24,6 +24,18 @@ uniform vec2 u_resolution;
 #include "astrophysics/black_hole.glsl"
 
 /**
+ * @brief Context structure for render pipeline to maintain SRP and clean architecture.
+ */
+struct RenderContext {
+    vec2 uv;
+    vec2 p;
+    vec2 pBh;
+    float rBh;
+    vec3 ray;
+    BlackHole bh;
+};
+
+/**
  * @brief Computes normalized camera view ray with subtle rotational drift.
  *
  * @param uv Normalized screen coordinates.
@@ -56,18 +68,41 @@ BlackHole initBlackHole() {
 }
 
 /**
+ * @brief Prepares the render context including camera ray, gravitational lensing, and coordinate projection.
+ *
+ * @param fragCoord Fragment coordinates from screen space.
+ * @return RenderContext Initialized render context.
+ */
+RenderContext prepareRenderContext(vec2 fragCoord) {
+    RenderContext ctx;
+    ctx.uv = (fragCoord - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+    ctx.ray = computeCameraRay(ctx.uv, u_time);
+    ctx.bh = initBlackHole();
+
+    LensingResult lensing = calculateGravitationalLensing(vec3(0.0), ctx.ray, ctx.bh);
+    vec3 deflectedRay = lensing.direction;
+
+    ctx.p = (deflectedRay.xy / deflectedRay.z) * 26.0;
+    ctx.pBh = ctx.p - ctx.bh.position.xy;
+    ctx.rBh = length(ctx.pBh);
+
+    return ctx;
+}
+
+/**
  * @brief Renders background cosmic environment (nebula, stars, pulsars) outside the event horizon.
  *
- * @param rBh Radial distance from black hole center.
- * @param schwarzschildRadius Radius of the event horizon.
- * @param backgroundUV Warped background UV coordinates.
+ * @param ctx Current render context.
  * @param t_slow Time variable for slow background drift.
  * @return vec3 Computed background color.
  */
-vec3 renderCosmicBackground(float rBh, float schwarzschildRadius, vec2 backgroundUV, float t_slow) {
-    if (rBh <= schwarzschildRadius) {
+vec3 renderCosmicBackground(RenderContext ctx, float t_slow) {
+    if (ctx.rBh <= ctx.bh.schwarzschildRadius) {
         return vec3(0.0);
     }
+
+    vec2 cosmicDrift = vec2(sin(t_slow * 0.3) * 0.03, cos(t_slow * 0.2) * 0.03);
+    vec2 backgroundUV = ctx.p + cosmicDrift;
 
     return renderNebula(backgroundUV, t_slow)
          + renderBackgroundStars(backgroundUV, t_slow)
@@ -75,19 +110,40 @@ vec3 renderCosmicBackground(float rBh, float schwarzschildRadius, vec2 backgroun
 }
 
 /**
+ * @brief Composes all visual scene layers (background, accretion disk, photon ring).
+ *
+ * @param ctx Current render context.
+ * @return vec3 Composite layer color.
+ */
+vec3 composeSceneLayers(RenderContext ctx) {
+    float t_fast = u_time * 0.3;
+    float t_slow = u_time * 0.05;
+
+    vec3 background = renderCosmicBackground(ctx, t_slow);
+    AccretionResult accretion = renderAccretionDisk(ctx.pBh, ctx.bh.schwarzschildRadius, t_fast);
+    PhotonRingResult ring = renderPhotonRing(ctx.pBh, ctx.bh.schwarzschildRadius, t_fast);
+
+    vec3 col = vec3(0.0);
+    col += background * (1.0 - min(accretion.shape + ring.shape, 0.95));
+    col += accretion.color;
+    col += ring.color;
+
+    return col;
+}
+
+/**
  * @brief Applies edge diffraction flare and event horizon black-out mask.
  *
  * @param col Current composite color.
- * @param rBh Radial distance from black hole center.
- * @param schwarzschildRadius Radius of the event horizon.
+ * @param ctx Current render context.
  * @return vec3 Masked and flared color.
  */
-vec3 applyBlackHoleMaskAndFlare(vec3 col, float rBh, float schwarzschildRadius) {
-    float flare = exp(-pow(rBh - schwarzschildRadius, 2.0) * 1200.0);
+vec3 applyBlackHoleMaskAndFlare(vec3 col, RenderContext ctx) {
+    float flare = exp(-pow(ctx.rBh - ctx.bh.schwarzschildRadius, 2.0) * 1200.0);
     vec3 flareColor = vec3(0.8, 0.9, 1.0);
     col += flareColor * flare * 0.15;
 
-    float horizonMask = smoothstep(schwarzschildRadius - 0.003, schwarzschildRadius + 0.003, rBh);
+    float horizonMask = smoothstep(ctx.bh.schwarzschildRadius - 0.003, ctx.bh.schwarzschildRadius + 0.003, ctx.rBh);
     return col * horizonMask;
 }
 
@@ -105,36 +161,11 @@ vec3 applyPostProcessing(vec3 col, vec2 uv) {
 }
 
 void main() {
-    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-    vec3 ray = computeCameraRay(uv, u_time);
+    RenderContext ctx = prepareRenderContext(gl_FragCoord.xy);
 
-    BlackHole bh = initBlackHole();
-
-    LensingResult lensing = calculateGravitationalLensing(vec3(0.0), ray, bh);
-    vec3 deflectedRay = lensing.direction;
-
-    vec2 p = (deflectedRay.xy / deflectedRay.z) * 26.0;
-    vec2 pBh = p - bh.position.xy;
-    float rBh = length(pBh);
-
-    float t_fast = u_time * 0.3;
-    float t_slow = u_time * 0.05;
-
-    vec2 cosmicDrift = vec2(sin(t_slow * 0.3) * 0.03, cos(t_slow * 0.2) * 0.03);
-    vec2 backgroundUV = p + cosmicDrift;
-
-    vec3 background = renderCosmicBackground(rBh, bh.schwarzschildRadius, backgroundUV, t_slow);
-
-    AccretionResult accretion = renderAccretionDisk(pBh, bh.schwarzschildRadius, t_fast);
-    PhotonRingResult ring = renderPhotonRing(pBh, bh.schwarzschildRadius, t_fast);
-
-    vec3 col = vec3(0.0);
-    col += background * (1.0 - min(accretion.shape + ring.shape, 0.95));
-    col += accretion.color;
-    col += ring.color;
-
-    col = applyBlackHoleMaskAndFlare(col, rBh, bh.schwarzschildRadius);
-    col = applyPostProcessing(col, uv);
+    vec3 col = composeSceneLayers(ctx);
+    col = applyBlackHoleMaskAndFlare(col, ctx);
+    col = applyPostProcessing(col, ctx.uv);
 
     fragColor = vec4(col, 1.0);
 }
