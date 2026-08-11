@@ -1,10 +1,11 @@
 /**
  * @file black_hole.glsl
- * @brief General relativity and black hole lensing calculations.
+ * @brief General relativity and black hole lensing calculations following SRP.
  *
  * Implements Schwarzschild geometry approximations for ray deflection
  * and event horizon capture.
  *
+ * @author Bosko
  * @since 2026-08
  */
 
@@ -30,6 +31,42 @@ struct LensingResult {
 };
 
 /**
+ * @brief Checks if a light ray intersects and gets trapped by the event horizon.
+ *
+ * @param rayPos Current position of the light ray in world space.
+ * @param bh BlackHole object defining the event horizon.
+ * @return bool True if the ray is trapped inside the horizon.
+ */
+bool isRayCaptured(vec3 rayPos, BlackHole bh) {
+    float dist = length(bh.position - rayPos);
+    return dist < bh.schwarzschildRadius;
+}
+
+/**
+ * @brief Computes the impact parameter for gravitational ray bending.
+ *
+ * @param rayPos Current position of the light ray.
+ * @param rayDir Normalized direction vector of the ray.
+ * @param bh BlackHole object center reference.
+ * @return float Calculated impact parameter magnitude.
+ */
+float computeImpactParameter(vec3 rayPos, vec3 rayDir, BlackHole bh) {
+    return length(cross(rayPos - bh.position, rayDir)) / length(rayDir);
+}
+
+/**
+ * @brief Computes the light ray deflection alpha angle based on impact factor.
+ *
+ * @param b Impact parameter.
+ * @param schwarzschildRadius Schwarzschild radius of the black hole.
+ * @return float Computed deflection angle magnitude.
+ */
+float computeDeflectionAngle(float b, float schwarzschildRadius) {
+    float impactFactor = smoothstep(schwarzschildRadius, schwarzschildRadius * 3.0, b);
+    return ((2.0 * schwarzschildRadius) / (b + 0.001)) * (1.0 - impactFactor);
+}
+
+/**
  * @brief Computes gravitational lensing using Schwarzschild approximation.
  *
  * Uses impact parameter and deflection angle approximation:
@@ -41,22 +78,14 @@ struct LensingResult {
  * @return LensingResult Deflected ray and capture mask.
  */
 LensingResult calculateGravitationalLensing(vec3 rayPos, vec3 rayDir, BlackHole bh) {
-    vec3 toCenter = bh.position - rayPos;
-    float dist = length(toCenter);
-
-    // Capture check
-    if (dist < bh.schwarzschildRadius) {
+    if (isRayCaptured(rayPos, bh)) {
         return LensingResult(vec3(0.0), 1.0);
     }
 
-    // Impact parameter (approximate)
-    float b = length(cross(rayPos - bh.position, rayDir)) / length(rayDir);
+    vec3 toCenter = bh.position - rayPos;
+    float b = computeImpactParameter(rayPos, rayDir, bh);
+    float alpha = computeDeflectionAngle(b, bh.schwarzschildRadius);
 
-    // Deflection angle
-    float impactFactor = smoothstep(bh.schwarzschildRadius, bh.schwarzschildRadius * 3.0, b);
-    float alpha = ((2.0 * bh.schwarzschildRadius) / (b + 0.001)) * (1.0 - impactFactor);
-
-    // Apply deflection
     vec3 deflectedDir = normalize(rayDir + normalize(toCenter) * alpha);
 
     return LensingResult(deflectedDir, 0.0);
