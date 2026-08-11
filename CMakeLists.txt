@@ -1,23 +1,28 @@
 cmake_minimum_required(VERSION 3.25)
 project(AccretionDesktop LANGUAGES CXX)
 
-# Set C++ standard to C++23
+# ==============================================================================
+# C++ Standard Configuration
+# ==============================================================================
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find required packages
+# ==============================================================================
+# Package Discovery and Dependencies
+# ==============================================================================
 find_package(OpenGL REQUIRED)
 find_package(X11 REQUIRED)
 
-# Optional / Platform packages using pkg-config if available, or direct discovery
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
 pkg_check_modules(WAYLAND_EGL REQUIRED wayland-egl)
 pkg_check_modules(EGL REQUIRED egl)
 pkg_check_modules(GLESV2 REQUIRED glesv2)
 
-# Define executable target
+# ==============================================================================
+# Target Definition
+# ==============================================================================
 add_executable(AccretionDesktop
         main.cpp
         src/swarcs/accretion/app/AccretionApp.cpp
@@ -33,7 +38,9 @@ add_executable(AccretionDesktop
         include/swarcs/accretion/physics/Gravity.hpp
 )
 
-# Include directories configuration
+# ==============================================================================
+# Include Directories
+# ==============================================================================
 target_include_directories(AccretionDesktop PRIVATE
         include
         ${X11_INCLUDE_DIR}
@@ -43,7 +50,9 @@ target_include_directories(AccretionDesktop PRIVATE
         ${GLESV2_INCLUDE_DIRS}
 )
 
-# Modern target-based link libraries
+# ==============================================================================
+# Link Libraries
+# ==============================================================================
 target_link_libraries(AccretionDesktop PRIVATE
         X11
         X11::Xrandr
@@ -54,7 +63,9 @@ target_link_libraries(AccretionDesktop PRIVATE
         ${WAYLAND_EGL_LIBRARIES}
 )
 
-# Compiler warnings and safety flags
+# ==============================================================================
+# Compiler Warnings and Safety Options
+# ==============================================================================
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(AccretionDesktop PRIVATE
             -Wall
@@ -64,3 +75,23 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             -Wnon-virtual-dtor
     )
 endif()
+
+# ==============================================================================
+# Asset Management: Shader Synchronization Target
+# ==============================================================================
+#
+# @brief Custom target to synchronize the shaders directory into the build output.
+# Ensures all GLSL files and include dependencies are accessible at runtime.
+#
+add_custom_target(CopyShaders ALL
+COMMENT "Synchronizing shaders directory to build output..."
+)
+
+add_custom_command(TARGET CopyShaders POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+${CMAKE_CURRENT_SOURCE_DIR}/shaders
+$<TARGET_FILE_DIR:AccretionDesktop>/shaders
+)
+
+# Enforce dependency so shaders are automatically copied before execution
+add_dependencies(AccretionDesktop CopyShaders)
