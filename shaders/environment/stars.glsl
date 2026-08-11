@@ -61,11 +61,11 @@ vec3 renderBackgroundStars(vec2 uv, float t) {
         float dist = length(cellUv - starPos);
 
         float sizeVariation = hash21(cellId + 5.6);
-        float starSize = mix(0.004, 0.045, pow(sizeVariation, 2.0));
+        float starSize = mix(0.008, 0.045, pow(sizeVariation, 9.0));
 
         float brightness = computeStarBrightness(cellId, t);
         float star = smoothstep(starSize, 0.0, dist) * brightness;
-        float halo = smoothstep(starSize * 3.0, 0.0, dist) * brightness * 0.25;
+        float halo = smoothstep(starSize * 5.0, 0.0, dist) * brightness * 0.5;
 
         vec3 starColor = computeStarColor(cellId);
         starsTotal += starColor * (star + halo);
