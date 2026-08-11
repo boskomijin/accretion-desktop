@@ -1,6 +1,6 @@
 /**
  * @file stars.glsl
- * @brief Procedural background stars and energetic pulsars generation.
+ * @brief Procedural background stars and energetic pulsars generation with temporal drift.
  *
  * @author Bosko Mijin
  * @since 2026-08
@@ -9,15 +9,18 @@
 precision highp float;
 
 /**
- * @brief Renders procedural background stars with individual twinkling effects.
+ * @brief Renders procedural background stars with individual twinkling effects and slow drift.
  *
  * @param uv Warped coordinates for the starfield.
- * @param t Time variable for animation.
+ * @param t Time variable for animation and drift.
  * @return vec3 RGB color contribution of the stars.
  */
 vec3 renderBackgroundStars(vec2 uv, float t) {
+    // Apply a very slow drift offset so the starfield glides gently over time
+    vec2 driftUV = uv + vec2(t * 0.008, t * 0.005);
+
     vec3 starsTotal = vec3(0.0);
-    vec2 gridScale = uv * 12.0;
+    vec2 gridScale = driftUV * 12.0;
     vec2 cellId = floor(gridScale);
     vec2 cellUv = fract(gridScale) - 0.5;
 
@@ -40,15 +43,18 @@ vec3 renderBackgroundStars(vec2 uv, float t) {
 }
 
 /**
- * @brief Renders rare pulsating energetic stars (pulsars) with intense flares.
+ * @brief Renders rare pulsating energetic stars (pulsars) with intense flares and drift.
  *
  * @param warpedUV Warped coordinates.
- * @param t Time variable for pulsing animation.
+ * @param t Time variable for pulsing animation and drift.
  * @return vec3 RGB color contribution of the pulsars.
  */
 vec3 renderPulsars(vec2 warpedUV, float t) {
+    // Apply a subtle independent drift for massive background pulsars
+    vec2 driftUV = warpedUV + vec2(-t * 0.003, t * 0.004);
+
     vec3 pulsarsTotal = vec3(0.0);
-    vec2 gridScale = warpedUV * 0.6;
+    vec2 gridScale = driftUV * 0.6;
     vec2 cellId = floor(gridScale);
     vec2 cellUv = fract(gridScale) - 0.5;
 
