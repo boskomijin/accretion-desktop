@@ -19,6 +19,8 @@ uniform vec2 u_resolution;
 #include "common/noise.glsl"
 #include "environment/nebula.glsl"
 #include "environment/stars.glsl"
+#include "environment/pulsars.glsl"
+#include "environment/quasars.glsl"
 #include "astrophysics/accretion_disk.glsl"
 #include "astrophysics/photon_ring.glsl"
 #include "astrophysics/black_hole.glsl"
@@ -90,7 +92,7 @@ RenderContext prepareRenderContext(vec2 fragCoord) {
 }
 
 /**
- * @brief Renders background cosmic environment (nebula, stars, pulsars) outside the event horizon.
+ * @brief Renders background cosmic environment (nebula, stars, pulsars, quasars) outside the event horizon.
  *
  * @param ctx Current render context.
  * @param t_slow Time variable for slow background drift.
@@ -106,7 +108,8 @@ vec3 renderCosmicBackground(RenderContext ctx, float t_slow) {
 
     return renderNebula(backgroundUV, t_slow)
          + renderBackgroundStars(backgroundUV, t_slow)
-         + renderPulsars(backgroundUV, t_slow);
+         + renderPulsars(backgroundUV, t_slow)
+         + renderQuasars(backgroundUV, t_slow);
 }
 
 /**
