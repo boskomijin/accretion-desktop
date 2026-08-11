@@ -1,16 +1,10 @@
 #version 300 es
 /**
  * @file fragment.glsl
- * @brief Main fragment shader composition root for black hole accretion visualization.
+ * @brief Interstellar-style black hole visualization with accurate color balance.
  *
- * Orchestrates background stars, nebulae, pulsars, gravitational lens warping,
- * and the accretion disk rendering pipeline.
- *
- * @author Bosko Mijin
  * @since 2026-08
  */
-
-#extension GL_GOOGLE_include_directive : enable
 
 precision highp float;
 
@@ -19,57 +13,76 @@ out vec4 fragColor;
 uniform float u_time;
 uniform vec2 u_resolution;
 
-// Include modular shader components
+#include "common/constants.glsl"
+#include "common/math.glsl"
 #include "common/noise.glsl"
 #include "environment/nebula.glsl"
 #include "environment/stars.glsl"
 #include "astrophysics/accretion_disk.glsl"
+#include "astrophysics/photon_ring.glsl"
+#include "astrophysics/black_hole.glsl"
 
 void main() {
-    // Normalize coordinates with aspect ratio preservation
     vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+    vec3 ray = normalize(vec3(uv, 5.0));
 
-    // Apply slow global cinematic motion and rotation
-    vec2 baseTranslation = vec2(sin(u_time * 0.02) * 0.05, cos(u_time * 0.015) * 0.05);
-    uv += baseTranslation;
-    uv *= rotate(u_time * 0.003);
+    // Suptilna rotacija kamere
+    float yaw = sin(u_time * 0.08) * 0.04;
+    ray.xz = mat2(cos(yaw), -sin(yaw), sin(yaw), cos(yaw)) * ray.xz;
 
-    float t = u_time * 0.2;
-    vec2 p = uv * 2.8;
+    float pitch = cos(u_time * 0.06) * 0.03;
+    ray.yz = mat2(cos(pitch), -sin(pitch), sin(pitch), cos(pitch)) * ray.yz;
 
-    // Black hole center placement and coordinate space warping
-    vec2 bhCenter = vec2(0.9, -0.7);
-    vec2 pBh = p - bhCenter;
+    // Definisanje crne rupe
+    BlackHole bh;
+    bh.position = vec3(2.4, 0.0, 0.0);
+    bh.mass = 1.0;
+    bh.schwarzschildRadius = 0.22;
+
+    // Gravitaciono sočivo
+    LensingResult lensing = calculateGravitationalLensing(vec3(0.0), ray, bh);
+    vec3 deflectedRay = lensing.direction;
+
+    vec2 p = (deflectedRay.xy / deflectedRay.z) * 26.0;
+    vec2 pBh = p - bh.position.xy;
     float rBh = length(pBh);
 
-    float eventHorizon = 0.22;
-    float bend = eventHorizon / (rBh + 0.05);
-    vec2 warpedUV = pBh * (1.0 + bend * 0.4);
+    float t_fast = u_time * 0.3;
+    float t_slow = u_time * 0.05;
 
-    // Render background elements only outside the event horizon
+    // Pozadina i nebula (bez veštačkog razlivanja sivog prstena)
+    vec2 cosmicDrift = vec2(sin(t_slow * 0.3) * 0.03, cos(t_slow * 0.2) * 0.03);
+    vec2 backgroundUV = p + cosmicDrift;
+
     vec3 background = vec3(0.0);
-    if (rBh > eventHorizon) {
-        vec3 nebula = renderNebula(warpedUV);
-        vec3 stars = renderBackgroundStars(warpedUV, t);
-        vec3 pulsars = renderPulsars(warpedUV, t);
-        background = nebula + stars + pulsars;
+    if (rBh > bh.schwarzschildRadius) {
+        background = renderNebula(backgroundUV, t_slow)
+                   + renderBackgroundStars(backgroundUV, t_slow)
+                   + renderPulsars(backgroundUV, t_slow);
     }
 
-    // Render accretion disk, Doppler effects, and photon ring
-    AccretionResult accretion = renderAccretionDisk(pBh, eventHorizon, t);
+    // Akrecioni disk i fotonski prsten
+    AccretionResult accretion = renderAccretionDisk(pBh, bh.schwarzschildRadius, t_fast);
+    PhotonRingResult ring = renderPhotonRing(pBh, bh.schwarzschildRadius, t_fast);
 
-    // Composite background and accretion disk layers
+    // Kompozicija slojeva
     vec3 col = vec3(0.0);
-    col += background * (1.0 - min(accretion.shape, 0.95));
+    col += background * (1.0 - min(accretion.shape + ring.shape, 0.95));
     col += accretion.color;
+    col += ring.color;
 
-    // Apply event horizon black shadow mask
-    float horizonMask = smoothstep(eventHorizon - 0.01, eventHorizon + 0.01, rBh);
+    // Fini, drastično stanjeni difrakcioni halo uz samu ivicu (bez sivog oreola)
+    float flare = exp(-pow(rBh - bh.schwarzschildRadius, 2.0) * 1200.0);
+    vec3 flareColor = vec3(0.8, 0.9, 1.0);
+    col += flareColor * flare * 0.15;
+
+    // Maska horizonta događaja (apsolutna crna sena bez curenja boja)
+    float horizonMask = smoothstep(bh.schwarzschildRadius - 0.003, bh.schwarzschildRadius + 0.003, rBh);
     col *= horizonMask;
 
-    // Gamma correction and subtle screen vignette shading
+    // Gamma korekcija + vinjeta
     col = pow(col, vec3(0.4545));
-    col *= (1.0 - 0.28 * length(uv + vec2(-0.3, 0.2)));
+    col *= (1.0 - 0.28 * length(uv));
 
     fragColor = vec4(col, 1.0);
 }
