@@ -9,6 +9,8 @@
  * @since 2026-08
  */
 
+precision highp float;
+
 /// Mathematical constant Pi ($\pi$).
 const float PI = 3.14159265359;
 

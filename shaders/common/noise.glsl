@@ -10,6 +10,9 @@ precision highp float;
 
 /**
  * @brief Generates a 2D rotation matrix for a given angle in radians.
+ *
+ * @param angle Rotation angle in radians.
+ * @return mat2 2D rotation matrix.
  */
 mat2 rotate(float angle) {
     float s = sin(angle), c = cos(angle);
@@ -18,6 +21,9 @@ mat2 rotate(float angle) {
 
 /**
  * @brief Pseudo-random hash function from 2D coordinate to float [0, 1].
+ *
+ * @param p 2D input coordinate.
+ * @return float Pseudo-random value in the range [0.0, 1.0].
  */
 float hash21(vec2 p) {
     p = fract(p * vec2(234.34, 435.345));
@@ -26,7 +32,10 @@ float hash21(vec2 p) {
 }
 
 /**
- * @brief 2D value noise function.
+ * @brief 2D value noise function with cubic interpolation.
+ *
+ * @param p 2D coordinate input.
+ * @return float Interpolated noise value.
  */
 float noise(vec2 p) {
     vec2 i = floor(p);
@@ -38,6 +47,9 @@ float noise(vec2 p) {
 
 /**
  * @brief Fractional Brownian Motion (FBM) combining multiple octaves of noise.
+ *
+ * @param p 2D coordinate input.
+ * @return float Accumulated multi-octave noise value.
  */
 float fbm(vec2 p) {
     float value = 0.0;

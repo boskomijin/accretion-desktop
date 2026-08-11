@@ -9,6 +9,8 @@
  * @since 2026-08
  */
 
+precision highp float;
+
 /**
  * @brief Rotates a 2D point around the origin by a given angle.
  *
