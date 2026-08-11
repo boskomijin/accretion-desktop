@@ -2,12 +2,13 @@
  * @file black_hole.glsl
  * @brief General relativity and black hole lensing calculations.
  *
- * Implements data structures and gravitational deflection equations for light rays
- * passing near a Schwarzschild black hole.
+ * Implements Schwarzschild geometry approximations for ray deflection
+ * and event horizon capture.
  *
- * @author Bosko Mijin
  * @since 2026-08
  */
+
+precision highp float;
 
 /**
  * @struct BlackHole
@@ -15,33 +16,48 @@
  */
 struct BlackHole {
     vec3 position;             ///< World-space position of the black hole center.
-    float mass;                ///< Scaled mass parameter governing gravitational field strength.
-    float schwarzschildRadius; ///< Schwarzschild radius ($r_s = 2GM/c^2$) defining the event horizon.
+    float mass;                ///< Mass parameter (scaled).
+    float schwarzschildRadius; ///< Schwarzschild radius (event horizon).
 };
 
 /**
- * @brief Computes gravitational lensing (spacetime curvature effect on light rays).
+ * @struct LensingResult
+ * @brief Holds deflected ray direction and capture mask.
+ */
+struct LensingResult {
+    vec3 direction; ///< Deflected ray direction.
+    float captured; ///< 1.0 if ray is captured, 0.0 otherwise.
+};
+
+/**
+ * @brief Computes gravitational lensing using Schwarzschild approximation.
  *
- * Approximates light ray bending toward the gravitational center and evaluates
- * whether the ray crosses the event horizon.
+ * Uses impact parameter and deflection angle approximation:
+ *   alpha ≈ 2 * r_s / b
  *
  * @param rayPos Current position of the light ray in world space.
  * @param rayDir Current normalized direction vector of the ray.
- * @param bh Reference to the BlackHole object influencing the ray.
- * @return vec3 Deflected ray direction vector, or vec3(0.0) if captured by the event horizon.
+ * @param bh BlackHole object influencing the ray.
+ * @return LensingResult Deflected ray and capture mask.
  */
-vec3 calculateGravitationalLensing(vec3 rayPos, vec3 rayDir, BlackHole bh) {
+LensingResult calculateGravitationalLensing(vec3 rayPos, vec3 rayDir, BlackHole bh) {
     vec3 toCenter = bh.position - rayPos;
     float dist = length(toCenter);
 
-    // Check if the ray has crossed the event horizon (trapped inside the black hole)
+    // Capture check
     if (dist < bh.schwarzschildRadius) {
-        return vec3(0.0);
+        return LensingResult(vec3(0.0), 1.0);
     }
 
-    // Approximate gravitational deflection inversely proportional to the square of the distance
-    float bendFactor = (1.5 * bh.schwarzschildRadius) / (dist * dist);
-    vec3 deflectedDir = normalize(rayDir + normalize(toCenter) * bendFactor);
+    // Impact parameter (approximate)
+    float b = length(cross(rayPos - bh.position, rayDir)) / length(rayDir);
 
-    return deflectedDir;
+    // Deflection angle
+    float impactFactor = smoothstep(bh.schwarzschildRadius, bh.schwarzschildRadius * 3.0, b);
+    float alpha = ((2.0 * bh.schwarzschildRadius) / (b + 0.001)) * (1.0 - impactFactor);
+
+    // Apply deflection
+    vec3 deflectedDir = normalize(rayDir + normalize(toCenter) * alpha);
+
+    return LensingResult(deflectedDir, 0.0);
 }
