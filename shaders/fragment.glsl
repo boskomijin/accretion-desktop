@@ -108,6 +108,7 @@ vec3 renderCosmicBackground(RenderContext ctx, float t_slow) {
 
     return renderNebula(backgroundUV, t_slow)
          + renderBackgroundStars(backgroundUV, t_slow)
+         + renderConstellations(backgroundUV, t_slow)
          + renderPulsars(backgroundUV, t_slow)
          + renderQuasars(backgroundUV, t_slow);
 }
