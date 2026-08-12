@@ -18,6 +18,7 @@ uniform vec2 u_resolution;
 #include "common/math.glsl"
 #include "common/noise.glsl"
 #include "environment/asteroids.glsl"
+#include "environment/comets.glsl"
 #include "environment/meteors.glsl"
 #include "environment/nebula.glsl"
 #include "environment/stars.glsl"
@@ -114,6 +115,7 @@ vec3 renderCosmicBackground(RenderContext ctx, float t_slow) {
          + renderAsteroids(backgroundUV, t_slow)
          + renderPulsars(backgroundUV, t_slow)
          + renderQuasars(backgroundUV, t_slow)
+         + renderComets(backgroundUV, t_slow)
          + renderMeteors(backgroundUV, t_slow);
 }
 
