@@ -19,7 +19,7 @@ uniform vec2 u_resolution;
 #include "common/noise.glsl"
 #include "environment/asteroids.glsl"
 #include "environment/comets.glsl"
-#include "environment/galaxies.glsl"
+#include "environment/cosmic-web.glsl"
 #include "environment/meteors.glsl"
 #include "environment/nebula.glsl"
 #include "environment/stars.glsl"
@@ -113,7 +113,7 @@ vec3 renderCosmicBackground(RenderContext ctx, float t_slow) {
     return renderNebula(backgroundUV, t_slow)
          + renderBackgroundStars(backgroundUV, t_slow)
          + renderConstellations(backgroundUV, t_slow)
-         + renderGalaxies(backgroundUV, t_slow)
+         + renderCosmicWeb(backgroundUV, t_slow)
          + renderAsteroids(backgroundUV, t_slow)
          + renderPulsars(backgroundUV, t_slow)
          + renderQuasars(backgroundUV, t_slow)
