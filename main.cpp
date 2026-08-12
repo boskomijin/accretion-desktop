@@ -14,6 +14,7 @@
 #include "swarcs/accretion/platform/EGLManager.hpp"
 #include "swarcs/accretion/graphics/FullScreenQuad.hpp"
 #include "swarcs/accretion/graphics/OpenGLRenderer.hpp"
+#include "swarcs/accretion/graphics/FrameBuffer.hpp"
 #include <iostream>
 #include <memory>
 #include <exception>
@@ -42,19 +43,39 @@ int main() {
 
         std::cout << "Graphics context successfully initialized.\n";
 
-        // 3. Create renderable graphics resources (Full-screen quad for shader execution)
+        // 3. Create renderable graphics resources (Main scene and full-screen quad for post-processing)
         const auto scene = std::make_unique<swarcs::accretion::graphics::FullScreenQuad>();
+        const auto screenQuad = std::make_unique<swarcs::accretion::graphics::FullScreenQuad>();
 
-        // 4. Create the API-agnostic OpenGL renderer instance encapsulating shader management
-        auto renderer = std::make_unique<swarcs::accretion::graphics::OpenGLRenderer>(
+        // 4. Create main scene renderer and bloom post-processing renderer
+        auto sceneRenderer = std::make_unique<swarcs::accretion::graphics::OpenGLRenderer>(
             "shaders/vertex.glsl",
             "shaders/fragment.glsl"
         );
 
-        // 5. Perform Dependency Injection (DI) via references and ownership transfer
-        swarcs::accretion::app::AccretionApp app(*window, *eglContext, std::move(renderer), *scene);
+        auto bloomRenderer = std::make_unique<swarcs::accretion::graphics::OpenGLRenderer>(
+            "shaders/vertex.glsl",
+            "shaders/post/bloom.glsl"
+        );
 
-        // 6. Start the core application loop
+        // 5. Create off-screen FrameBuffer matching window dimensions for multi-pass rendering
+        auto frameBuffer = std::make_unique<swarcs::accretion::graphics::FrameBuffer>(
+            window->getWidth(),
+            window->getHeight()
+        );
+
+        // 6. Perform Dependency Injection (DI) via references and ownership transfer
+        swarcs::accretion::app::AccretionApp app(
+            *window,
+            *eglContext,
+            std::move(sceneRenderer),
+            std::move(bloomRenderer),
+            std::move(frameBuffer),
+            *scene,
+            *screenQuad
+        );
+
+        // 7. Start the core application loop
         app.run();
     } catch (const std::exception& e) {
         // Catch and report any fatal exceptions during execution

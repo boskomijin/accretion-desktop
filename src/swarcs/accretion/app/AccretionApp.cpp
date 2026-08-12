@@ -1,33 +1,52 @@
+/**
+ * @file AccretionApp.cpp
+ * @brief Implementation of AccretionApp managing multi-pass rendering (Scene + Bloom Post-Processing).
+ *
+ * @author Bosko Mijin
+ * @since 2026-02
+ */
+
 #include "swarcs/accretion/app/AccretionApp.hpp"
+#include "swarcs/accretion/graphics/FrameBuffer.hpp"
 #include <chrono>
+#include <memory>
 
 namespace swarcs::accretion::app {
 
     /**
-     * @brief Constructs the AccretionApp instance with injected dependencies.
+     * @brief Constructs the AccretionApp instance with injected dependencies and post-processing pipeline.
      *
      * @param windowImpl Reference to the window implementation.
      * @param contextImpl Reference to the graphics context implementation.
-     * @param rendererImpl Unique pointer to the graphics renderer implementation.
+     * @param sceneRendererImpl Unique pointer to the main scene renderer.
+     * @param bloomRendererImpl Unique pointer to the bloom post-processing renderer.
+     * @param frameBufferImpl Unique pointer to the off-screen framebuffer.
      * @param sceneImpl Reference to the renderable scene component.
+     * @param quadImpl Reference to the full-screen quad for post-processing.
      *
      * @author Bosko Mijin
-     * @since 2026-02
+     * @since 2026-08
      */
     AccretionApp::AccretionApp(platform::IWindow& windowImpl,
                                platform::IGraphicsContext& contextImpl,
-                               std::unique_ptr<graphics::IRenderer> rendererImpl,
-                               graphics::IRenderable& sceneImpl)
+                               std::unique_ptr<graphics::IRenderer> sceneRendererImpl,
+                               std::unique_ptr<graphics::IRenderer> bloomRendererImpl,
+                               std::unique_ptr<graphics::FrameBuffer> frameBufferImpl,
+                               graphics::IRenderable& sceneImpl,
+                               graphics::IRenderable& quadImpl)
         : window(windowImpl),
           graphicsContext(contextImpl),
-          renderer(std::move(rendererImpl)),
-          renderableScene(sceneImpl) {}
+          sceneRenderer(std::move(sceneRendererImpl)),
+          bloomRenderer(std::move(bloomRendererImpl)),
+          frameBuffer(std::move(frameBufferImpl)),
+          renderableScene(sceneImpl),
+          fullScreenQuad(quadImpl) {}
 
     /**
-     * @brief Executes the main application lifecycle loop.
+     * @brief Executes the main application lifecycle loop with multi-pass rendering.
      *
-     * Tracks monotonic elapsed duration, populates the frame context, delegates
-     * rendering to the injected renderer abstraction, and presents frames.
+     * Pass 1: Renders the scene into an off-screen Framebuffer texture.
+     * Pass 2: Applies the bloom post-processing shader over the full-screen quad and presents the frame.
      *
      * @author Bosko Mijin
      * @since 2026-02
@@ -36,9 +55,8 @@ namespace swarcs::accretion::app {
         const auto startTime = std::chrono::steady_clock::now();
         auto lastFrameTime = startTime;
 
-        // Privremeno forsiramo beskonačnu petlju nezavisno od X11 eventova
         while (true) {
-            window.processEvents(); // samo praznimo event queue da se prozor ne zaledi
+            window.processEvents(); // Flush X11 event queue
 
             const auto currentTime = std::chrono::steady_clock::now();
 
@@ -50,9 +68,18 @@ namespace swarcs::accretion::app {
 
             lastFrameTime = currentTime;
 
-            renderer->beginFrame();
-            renderer->render(renderableScene, frameContext);
-            renderer->endFrame();
+            // --- PASS 1: Render main scene into off-screen Framebuffer ---
+            frameBuffer->bind();
+            sceneRenderer->beginFrame();
+            sceneRenderer->render(renderableScene, frameContext);
+            sceneRenderer->endFrame();
+            frameBuffer->unbind();
+
+            // --- PASS 2: Post-processing & Bloom over screen ---
+            bloomRenderer->beginFrame();
+            // Texture from frameBuffer->getTextureID() is passed into the bloom shader (uSceneTexture)
+            bloomRenderer->render(fullScreenQuad, frameContext);
+            bloomRenderer->endFrame();
 
             graphicsContext.swapBuffers();
         }
