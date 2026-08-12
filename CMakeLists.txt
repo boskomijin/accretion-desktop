@@ -33,6 +33,9 @@ add_executable(AccretionDesktop
         src/swarcs/accretion/graphics/ShaderHandle.cpp
         src/swarcs/accretion/graphics/ProgramHandle.cpp
         src/swarcs/accretion/graphics/FullScreenQuad.cpp
+        src/swarcs/accretion/graphics/FrameBuffer.cpp
+        include/swarcs/accretion/app/AccretionApp.hpp
+        include/swarcs/accretion/graphics/FrameBuffer.hpp
         include/swarcs/accretion/physics/Constants.hpp
         include/swarcs/accretion/physics/Relativity.hpp
         include/swarcs/accretion/physics/Gravity.hpp
@@ -84,13 +87,13 @@ endif()
 # Ensures all GLSL files and include dependencies are accessible at runtime.
 #
 add_custom_target(CopyShaders ALL
-COMMENT "Synchronizing shaders directory to build output..."
+        COMMENT "Synchronizing shaders directory to build output..."
 )
 
 add_custom_command(TARGET CopyShaders POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_CURRENT_SOURCE_DIR}/shaders
-$<TARGET_FILE_DIR:AccretionDesktop>/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+        $<TARGET_FILE_DIR:AccretionDesktop>/shaders
 )
 
 # Enforce dependency so shaders are automatically copied before execution
